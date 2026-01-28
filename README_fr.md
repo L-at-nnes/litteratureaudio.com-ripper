@@ -70,9 +70,10 @@ Le tableau ci-dessous couvre toutes les options exposees par la CLI.
 | `--max-pages` | entier | Limiter la pagination des listings (auteur / voix / membre) | `python main.py --max-pages 2 URL_LISTING` |
 | `--dry-run` | flag | Extraction seule, sans ecriture audio | `python main.py --dry-run --txt audiobooks.txt` |
 | `--metadata-only` | flag | Ecrit cover + description + JSON uniquement | `python main.py --metadata-only URL` |
-| `--summary-report` | chemin JSON | Ecrit un resume (par auteur/projet + totaux) | `python main.py --summary-report summary.json --txt audiobooks.txt` |
-| `--csv-report` | chemin CSV | Ecrit un CSV d'indexation | `python main.py --csv-report library.csv --txt audiobooks.txt` |
+| `--summary-report` | chemin JSON (optionnel) | Ecrit un resume (defaut: `summary-report.json` si pas de chemin) | `python main.py --summary-report --txt audiobooks.txt` |
+| `--csv-report` | chemin CSV (optionnel) | Ecrit un CSV d'indexation (defaut: `report.csv` si pas de chemin) | `python main.py --csv-report --txt audiobooks.txt` |
 | `--verify` | chemin dossier | Re-scan un dossier et signale les manques | `python main.py --verify dl` |
+| `--no-duplicates` | flag | Cree des raccourcis au lieu de re-telecharger les doublons | `python main.py --no-duplicates --txt audiobooks.txt` |
 
 ### Exemples de commandes utiles
 
@@ -96,30 +97,39 @@ Le comportement depend du type d'URL de depart.
 - Tous les livres sont ranges dedans.
 - Un projet collectif rencontre dans ce contexte est place a l'interieur.
 
-### 2) URL projet collectif directe
+### 2) URL projet collectif directe (avec auteur unique)
 
-- Le dossier du projet est cree a la racine de `--output`.
+- Le dossier du projet est cree a la racine avec le format : `[Auteur] - [Projet]`.
 - La racine du projet contient les metadonnees (cover, `description.txt`, JSON).
 - Chaque livre du projet a son propre sous-dossier.
 
-### 3) URL livre direct
+### 3) URL projet collectif directe (sans auteur, ex: Bible)
 
-- Le dossier du livre est cree a la racine de `--output`.
+- Le dossier du projet est cree a la racine avec le nom du projet uniquement.
+- Chaque livre du projet a son propre sous-dossier.
+
+### 4) URL livre direct
+
+- Le dossier du livre est cree a la racine avec le format : `[Auteur] - [Titre]`.
 - Il contient l'audio et les metadonnees.
 
 ## Exemple d'arborescence
 
 ```text
 dl/
-  Alexandre Dumas/
-    Le Comte de Monte-Cristo (Oeuvre integrale)/
-      description.txt
-      Le Comte de Monte-Cristo (Oeuvre integrale).json
-      cover.jpg
-      Le Comte de Monte-Cristo (Tome 1)/
-        ...mp3
-      Le Comte de Monte-Cristo (Tome 2)/
-        ...mp3
+  Alexandre Dumas - Le Comte de Monte-Cristo (Oeuvre integrale)/
+    description.txt
+    Le Comte de Monte-Cristo (Oeuvre integrale).json
+    cover.jpg
+    Le Comte de Monte-Cristo (Tome 1)/
+      ...mp3
+    Le Comte de Monte-Cristo (Tome 2)/
+      ...mp3
+  Jacques Bainville - Histoire de France/
+    cover.jpg
+    description.txt
+    Histoire de France.json
+    ...mp3
 ```
 
 ## Ce que le scraper gere explicitement
@@ -127,6 +137,9 @@ dl/
 - Pagination des pages auteur / voix / membre.
 - Projets collectifs qui sont en realite des collections de livres.
 - Listes de pistes chargees 10 par 10 via un bouton "voir plus" (loop-more).
+- Traitement sequentiel des projets : chaque projet est entierement scrape et telecharge avant de passer au suivant.
+- Retry automatique en cas d'echec de telechargement (jusqu'a 3 tentatives avec logs).
+- Detection des doublons avec `--no-duplicates` : cree des raccourcis au lieu de re-telecharger.
 
 Si une page contient plus de 10 pistes, l'outil appelle l'endpoint interne qui charge la suite, afin d'obtenir la liste complete des pistes.
 
@@ -144,10 +157,20 @@ Ces fichiers peuvent etre supprimes sans risque apres execution.
 
 Le projet est organise en sous-packages clairs:
 
-- `src/app/` : CLI, pipeline, verification, logging.
-- `src/core/` : modeles et utilitaires.
-- `src/infra/` : HTTP, resolution des liens, parsing HTML.
-- `src/report/` : exports et rapports.
+```
+src/
+├── app/                    # Couche application
+│   ├── cli.py              # Interface ligne de commande
+│   ├── pipeline.py         # Point d'entree principal (run_pipeline)
+│   ├── scraper.py          # Crawling des URLs et extraction des metadonnees
+│   ├── downloader_pipeline.py  # Logique de telechargement et arborescence
+│   ├── constants.py        # Constantes partagees (ItemExtra, FolderPaths)
+│   ├── registry.py         # Registres thread-safe pour deduplication
+│   └── ...
+├── core/                   # Modeles et utilitaires
+├── infra/                  # HTTP, parsing, telechargement
+└── report/                 # Rapports et exports
+```
 
 Point d'entree:
 

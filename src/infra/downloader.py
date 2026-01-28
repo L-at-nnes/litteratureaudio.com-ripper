@@ -37,6 +37,22 @@ def guess_kind_from_name(name: Optional[str], content_type: Optional[str]) -> st
 
 
 def resolve_link(session: requests.Session, link: DownloadLink, rate_limiter: RateLimiter, logger: logging.Logger) -> DownloadLink:
+    """
+    Figure out what a download link actually points to.
+    
+    The site uses various redirect schemes:
+    - /d?nonce=xxx -> redirects to the actual MP3
+    - ?download=xxx -> download token that redirects
+    - Direct .mp3/.zip links -> no resolution needed
+    
+    We do a HEAD request to follow redirects and get:
+    - The final URL
+    - The suggested filename (from Content-Disposition header)
+    - The file size
+    - The actual file type (mp3, zip, etc.)
+    
+    This avoids downloading files just to figure out what they are.
+    """
     if link.resolved:
         return link
     if link.kind in ['mp3', 'zip', 'm3u', 'direct']:
@@ -86,10 +102,22 @@ def download_file(
     logger: logging.Logger,
     suggested_filename: Optional[str] = None,
 ) -> Optional[Path]:
+    """
+    Download a file with retry logic.
+    
+    - Tries up to 3 times if something fails
+    - Uses a .part temp file to avoid corrupt half-downloads
+    - Logs each retry so you know what's happening
+    - Respects rate limiting to be polite to the server
+    
+    Returns the path to the downloaded file, or None if all attempts failed.
+    """
     max_attempts = 3
     for attempt in range(1, max_attempts + 1):
         temp_path = None
         try:
+            if attempt > 1:
+                logger.info("Retry (%s/%s) for %s", attempt, max_attempts, url)
             rate_limiter.wait()
             response = session.get(url, stream=True, timeout=(10, 120))
             response.raise_for_status()
@@ -116,10 +144,10 @@ def download_file(
                 except Exception:
                     pass
             if attempt < max_attempts:
-                logger.warning("Download failed (%s/%s) for %s: %s", attempt, max_attempts, url, exc)
+                logger.warning("Download failed, will retry (%s/%s) for %s: %s", attempt, max_attempts, url, exc)
                 time.sleep(attempt)
                 continue
-            logger.error("Failed download %s: %s", url, exc, exc_info=True)
+            logger.error("Failed download after %s attempts %s: %s", max_attempts, url, exc, exc_info=True)
             return None
 
 
@@ -130,38 +158,66 @@ def download_cover(
     rate_limiter: RateLimiter,
     logger: logging.Logger,
 ) -> Optional[Path]:
+    """
+    Download the cover image with retry logic.
+    
+    Tries up to 3 times if the download fails.
+    Detects image type from Content-Type header (jpg, png, webp).
+    
+    Returns the path to the saved cover, or None if all attempts failed.
+    """
     if not url:
         return None
-    try:
-        rate_limiter.wait()
-        response = session.get(url, stream=True, timeout=20)
-        response.raise_for_status()
-        content_type = response.headers.get('Content-Type', '')
-        ext = '.jpg'
-        if 'png' in content_type:
-            ext = '.png'
-        elif 'webp' in content_type:
-            ext = '.webp'
-        filename = f'cover{ext}'
-        dest_path = dest_dir / filename
-        with dest_path.open('wb') as handle:
-            for chunk in response.iter_content(chunk_size=1024 * 64):
-                if chunk:
-                    handle.write(chunk)
-        logger.info("Downloaded cover %s", dest_path.name)
-        return dest_path
-    except Exception as exc:
-        logger.warning("Cover download failed: %s", exc)
-        return None
+    
+    max_attempts = 3
+    for attempt in range(1, max_attempts + 1):
+        try:
+            if attempt > 1:
+                logger.info("Retry cover (%s/%s) for %s", attempt, max_attempts, url)
+            rate_limiter.wait()
+            response = session.get(url, stream=True, timeout=20)
+            response.raise_for_status()
+            content_type = response.headers.get('Content-Type', '')
+            ext = '.jpg'
+            if 'png' in content_type:
+                ext = '.png'
+            elif 'webp' in content_type:
+                ext = '.webp'
+            filename = f'cover{ext}'
+            dest_path = dest_dir / filename
+            with dest_path.open('wb') as handle:
+                for chunk in response.iter_content(chunk_size=1024 * 64):
+                    if chunk:
+                        handle.write(chunk)
+            logger.info("Downloaded cover %s", dest_path.name)
+            return dest_path
+        except Exception as exc:
+            if attempt < max_attempts:
+                logger.warning("Cover download failed, will retry (%s/%s): %s", attempt, max_attempts, exc)
+                time.sleep(attempt)
+                continue
+            logger.warning("Cover download failed after %s attempts: %s", max_attempts, exc)
+            return None
 
 
 def tag_mp3(mp3_path: Path, item: AudioItem, cover_path: Optional[Path], track_title: Optional[str], logger: logging.Logger) -> None:
+    """
+    Write ID3 tags to an MP3 file.
+    
+    Tags written:
+    - TIT2 (Title): track title if available, else the audiobook title
+    - TPE1 (Artist): reader name, fallback to author, fallback to "Unknown"
+    - TALB (Album): the audiobook title
+    - APIC (Cover): embedded album art if we have a cover image
+    
+    Won't crash if tagging fails - just logs a warning.
+    """
     try:
         audio = MP3(mp3_path, ID3=ID3)
         try:
             audio.add_tags()
         except Exception:
-            pass
+            pass  # Tags might already exist, that's fine
 
         # Prefer track title, fallback to the item title.
         title = track_title or item.title

@@ -35,9 +35,26 @@ def parse_args(argv: Iterable[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--max-pages", type=int, default=0, help="Limit pagination for listings")
     parser.add_argument("--dry-run", action="store_true", help="Extract only (no files written)")
     parser.add_argument("--metadata-only", action="store_true", help="Download cover/description/JSON only")
-    parser.add_argument("--summary-report", help="Write summary report JSON to PATH")
-    parser.add_argument("--csv-report", help="Write CSV report to PATH")
+    parser.add_argument(
+        "--summary-report",
+        nargs="?",
+        const="summary-report.json",
+        default=None,
+        help="Write summary report JSON to PATH (default: summary-report.json)",
+    )
+    parser.add_argument(
+        "--csv-report",
+        nargs="?",
+        const="report.csv",
+        default=None,
+        help="Write CSV report to PATH (default: report.csv)",
+    )
     parser.add_argument("--verify", dest="verify_path", help="Verify a folder and report missing tracks")
+    parser.add_argument(
+        "--no-duplicates",
+        action="store_true",
+        help="Create relative shortcuts for duplicate albums instead of re-downloading",
+    )
     return parser.parse_args(argv)
 
 

@@ -69,9 +69,10 @@ The table below covers every CLI option exposed by the tool.
 | `--max-pages` | integer | Limit listing pagination (author / reader / member) | `python main.py --max-pages 2 URL_LISTING` |
 | `--dry-run` | flag | Extract only, no audio written | `python main.py --dry-run --txt audiobooks.txt` |
 | `--metadata-only` | flag | Write cover + description + JSON only | `python main.py --metadata-only URL` |
-| `--summary-report` | JSON file path | Write a summary report (per author/project + totals) | `python main.py --summary-report summary.json --txt audiobooks.txt` |
-| `--csv-report` | CSV file path | Write a CSV for indexing | `python main.py --csv-report library.csv --txt audiobooks.txt` |
+| `--summary-report` | JSON file path (optional) | Write a summary report (default: `summary-report.json` if no path given) | `python main.py --summary-report --txt audiobooks.txt` |
+| `--csv-report` | CSV file path (optional) | Write a CSV for indexing (default: `report.csv` if no path given) | `python main.py --csv-report --txt audiobooks.txt` |
 | `--verify` | folder path | Re-scan a folder and report missing tracks/files | `python main.py --verify dl` |
+| `--no-duplicates` | flag | Create shortcuts instead of re-downloading duplicates | `python main.py --no-duplicates --txt audiobooks.txt` |
 
 ### Useful Command Recipes
 
@@ -95,30 +96,39 @@ Behavior depends on the type of starting URL.
 - All works are placed under that folder.
 - Collective projects discovered in this context are nested inside that root.
 
-### 2) Direct collective project URLs
+### 2) Direct collective project URLs (with single author)
 
-- The project folder is created at the output root.
+- The project folder is created at the output root with the format: `[Author] - [Project]`.
 - The project root contains metadata (cover, `description.txt`, JSON).
 - Each book inside the project gets its own subfolder.
 
-### 3) Direct book URLs
+### 3) Direct collective project URLs (no author, e.g. Bible)
 
-- The book folder is created at the output root.
+- The project folder is created at the output root with the project name only.
+- Each book inside the project gets its own subfolder.
+
+### 4) Direct book URLs
+
+- The book folder is created at the output root with the format: `[Author] - [Title]`.
 - It contains the audio files and metadata.
 
 ## Example Folder Tree
 
 ```text
 dl/
-  Alexandre Dumas/
-    Le Comte de Monte-Cristo (Oeuvre integrale)/
-      description.txt
-      Le Comte de Monte-Cristo (Oeuvre integrale).json
-      cover.jpg
-      Le Comte de Monte-Cristo (Tome 1)/
-        ...mp3
-      Le Comte de Monte-Cristo (Tome 2)/
-        ...mp3
+  Alexandre Dumas - Le Comte de Monte-Cristo (Oeuvre integrale)/
+    description.txt
+    Le Comte de Monte-Cristo (Oeuvre integrale).json
+    cover.jpg
+    Le Comte de Monte-Cristo (Tome 1)/
+      ...mp3
+    Le Comte de Monte-Cristo (Tome 2)/
+      ...mp3
+  Jacques Bainville - Histoire de France/
+    cover.jpg
+    description.txt
+    Histoire de France.json
+    ...mp3
 ```
 
 ## What the scraper explicitly handles
@@ -126,6 +136,9 @@ dl/
 - Listing pagination (author / reader / member pages).
 - Collective projects that are actually collections of books.
 - Track lists that load 10-by-10 via a "load more" button (WordPress loop-more).
+- Sequential project processing: each project is fully scraped and downloaded before moving to the next.
+- Automatic retry on download failures (up to 3 attempts with logged retries).
+- Duplicate detection with `--no-duplicates`: creates shortcuts instead of re-downloading.
 
 If a page has more than 10 tracks, the tool calls the internal endpoint that loads the next track batches, so the full track list is captured.
 
@@ -143,10 +156,20 @@ These files can be safely deleted after a run.
 
 The codebase is organized into clean subpackages:
 
-- `src/app/`: CLI, pipeline, verification, logging.
-- `src/core/`: data models and utilities.
-- `src/infra/`: HTTP, link resolution, HTML parsing.
-- `src/report/`: exports and reporting.
+```
+src/
+├── app/                    # Application layer
+│   ├── cli.py              # Command-line interface
+│   ├── pipeline.py         # Main entry point (run_pipeline)
+│   ├── scraper.py          # URL crawling and metadata extraction
+│   ├── downloader_pipeline.py  # Download logic and folder structure
+│   ├── constants.py        # Shared constants (ItemExtra, FolderPaths)
+│   ├── registry.py         # Thread-safe deduplication registries
+│   └── ...
+├── core/                   # Domain models and utilities
+├── infra/                  # HTTP, parsing, file downloads
+└── report/                 # Reporting and exports
+```
 
 Entry point:
 

@@ -34,7 +34,7 @@ pip install -r requirements.txt
 ### 1) Quick compilation check
 
 ```bash
-python -m py_compile main.py src\app\cli.py src\app\pipeline.py src\app\verify.py src\app\logging_utils.py src\infra\http.py src\infra\downloader.py src\infra\parser.py src\report\export.py src\report\reporting.py src\core\models.py src\core\utils.py
+python -m py_compile main.py src\app\cli.py src\app\pipeline.py src\app\scraper.py src\app\downloader_pipeline.py src\app\constants.py src\app\registry.py src\app\verify.py src\app\logging_utils.py src\infra\http.py src\infra\downloader.py src\infra\parser.py src\report\export.py src\report\reporting.py src\core\models.py src\core\utils.py
 ```
 
 ### 2) Short dry-run (no download)
@@ -61,14 +61,53 @@ When you touch scraping or the pipeline, explicitly verify:
 - MP3-first then ZIP fallback in `--format default`.
 - Windows-safe filename cleaning (forbidden characters, `:`).
 
+### Folder naming conventions
+
+- **Single album (direct URL):** `[Author] - [Title]` at output root.
+- **Collective project with author (direct URL):** `[Author] - [Project]` at output root.
+- **Collective project without author (e.g. Bible):** `[Project]` at output root.
+- **Author/reader/member listing:** `[Author]/[Book]` or `[Author]/[Project]/[Book]`.
+
+### Sequential project processing
+
+Projects are processed one at a time: all metadata is scraped, then all files are downloaded, before moving to the next project. Multithreading is used *within* a project, not *between* projects.
+
+### Duplicate detection (`--no-duplicates`)
+
+When enabled, the tool creates directory junctions (Windows) or symlinks (Unix) instead of re-downloading duplicate albums. Falls back to `.redirect.txt` files if junction creation fails.
+
+### Retry logic
+
+Downloads retry up to 3 times on failure. Each retry is logged:
+- `Retry (2/3) for [url]` before the attempt.
+- `Download failed, will retry (1/3) for [url]: [error]` after failure.
+
 ## Code organization
 
 The project is structured into clear subpackages:
 
-- `src/app/`: CLI, pipeline, verification, logging.
-- `src/core/`: models and utilities.
-- `src/infra/`: HTTP, link resolution, HTML parsing.
-- `src/report/`: exports and reporting.
+```
+src/
+├── app/                    # Application layer
+│   ├── cli.py              # Command-line interface and argument parsing
+│   ├── pipeline.py         # Main entry point (run_pipeline)
+│   ├── scraper.py          # URL crawling and metadata extraction
+│   ├── downloader_pipeline.py  # Download logic and folder structure
+│   ├── constants.py        # Shared constants and data classes
+│   ├── registry.py         # Thread-safe deduplication registries
+│   ├── verify.py           # --verify mode implementation
+│   └── logging_utils.py    # Logger configuration
+├── core/                   # Domain models and utilities
+│   ├── models.py           # AudioItem, DownloadLink, Track
+│   └── utils.py            # sanitize_filename, ensure_dir, etc.
+├── infra/                  # Infrastructure (HTTP, parsing)
+│   ├── http.py             # Session, rate limiting, fetch functions
+│   ├── downloader.py       # File downloads, ID3 tagging, unzip
+│   └── parser.py           # HTML parsing with BeautifulSoup
+└── report/                 # Reporting and exports
+    ├── export.py           # JSON and description export
+    └── reporting.py        # Summary, CSV, dry-run reporters
+```
 
 Entry point:
 

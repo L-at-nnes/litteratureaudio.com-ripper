@@ -2,6 +2,7 @@
 __pycache__/
 *.py[cod]
 *.pyo
+*.pyd
 
 # Virtual environments
 .venv/
@@ -13,6 +14,8 @@ dl/
 *.log
 dry-run-report.*
 library*.csv
+report.csv
+summary-report.json
 
 # Tooling caches
 .pytest_cache/
@@ -22,6 +25,13 @@ library*.csv
 # OS/editor noise
 .DS_Store
 Thumbs.db
+*.swp
+*.swo
+*~
 
-# Tests
+# IDE
+.vscode/
+.idea/
+
+# Tests (example file, not tracked)
 audiobooks.txt
