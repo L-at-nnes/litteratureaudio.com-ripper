@@ -66,6 +66,7 @@ When you touch scraping or the pipeline, explicitly verify:
 - **Single album (direct URL):** `[Author] - [Title]` at output root.
 - **Collective project with author (direct URL):** `[Author] - [Project]` at output root.
 - **Collective project without author (e.g. Bible):** `[Project]` at output root.
+- **Nested projects:** `[Author] - [ParentProject]/[NestedProject]/[Book]` (no author prefix on nested).
 - **Author/reader/member listing:** `[Author]/[Book]` or `[Author]/[Project]/[Book]`.
 
 ### Sequential project processing

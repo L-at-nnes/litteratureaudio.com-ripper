@@ -112,6 +112,13 @@ Behavior depends on the type of starting URL.
 - The book folder is created at the output root with the format: `[Author] - [Title]`.
 - It contains the audio files and metadata.
 
+### 5) Nested projects
+
+Some collective projects contain other collective projects (e.g., "Les Aventures de Sherlock Holmes" contains "La Vallée de la peur").
+
+- Nested projects are placed inside their parent project folder.
+- They use only the project name (no author prefix): `[Parent]/[NestedProject]/[Book]`.
+
 ## Example Folder Tree
 
 ```text
@@ -124,6 +131,12 @@ dl/
       ...mp3
     Le Comte de Monte-Cristo (Tome 2)/
       ...mp3
+  Arthur Conan Doyle - Les Aventures de Sherlock Holmes (Oeuvre integrale)/
+    La Vallee de la peur (Oeuvre integrale)/   <-- nested project
+      La Vallee de la peur (Episode 1)/
+      La Vallee de la peur (Episode 2)/
+    Le Chien des Baskerville/
+    Une etude en rouge/
   Jacques Bainville - Histoire de France/
     cover.jpg
     description.txt

@@ -223,6 +223,7 @@ def _determine_folder_paths(
     - Is this from an author listing? -> Author/Book/
     - Is this a collective project? -> Author - Project/ or Project/
     - Is this a single album? -> Author - Title/
+    - Is this a nested project? -> Parent/NestedProject/Book/
     
     Returns a FolderPaths object with root_dir, collection_dir, and item_dir.
     """
@@ -242,12 +243,31 @@ def _determine_folder_paths(
     collection_dir = None
     
     if author_prefixed:
-        # Collective project with single author: "Author - Project" at root
-        if skip_download:
-            item_dir = output_dir / sanitize_filename(str(author_prefixed))
+        # This item belongs to an author-prefixed collection
+        parent_dir = output_dir / sanitize_filename(str(author_prefixed))
+        
+        # Extract the project name from "Author - Project" format
+        parent_project_name = author_prefixed.split(" - ", 1)[-1] if " - " in author_prefixed else author_prefixed
+        
+        # Check if this is a nested project or child of one
+        is_nested = collection_root and collection_root != parent_project_name
+        
+        if skip_download and is_nested:
+            # This is the ROOT of a NESTED project (e.g., "La Vallée de la peur" inside "Sherlock Holmes")
+            collection_dir = parent_dir / sanitize_filename(str(collection_root))
+            item_dir = collection_dir
+        elif skip_download:
+            # This is the root of the main author-prefixed collection itself
+            item_dir = parent_dir
             collection_dir = item_dir
+        elif is_nested:
+            # This is a CHILD of a nested project (e.g., "Épisode 1" of "La Vallée de la peur")
+            nested_dir = parent_dir / sanitize_filename(str(collection_root))
+            collection_dir = nested_dir
+            item_dir = nested_dir / item_name
         else:
-            collection_dir = output_dir / sanitize_filename(str(author_prefixed))
+            # This is a regular child book in the main collection
+            collection_dir = parent_dir
             item_dir = collection_dir / item_name
         root_dir = output_dir
         

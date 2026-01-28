@@ -113,6 +113,13 @@ Le comportement depend du type d'URL de depart.
 - Le dossier du livre est cree a la racine avec le format : `[Auteur] - [Titre]`.
 - Il contient l'audio et les metadonnees.
 
+### 5) Projets imbriques
+
+Certains projets collectifs contiennent d'autres projets collectifs (ex: "Les Aventures de Sherlock Holmes" contient "La Vallee de la peur").
+
+- Les projets imbriques sont places dans le dossier du projet parent.
+- Ils utilisent uniquement le nom du projet (sans prefixe auteur) : `[Parent]/[ProjetImbrique]/[Livre]`.
+
 ## Exemple d'arborescence
 
 ```text
@@ -125,6 +132,12 @@ dl/
       ...mp3
     Le Comte de Monte-Cristo (Tome 2)/
       ...mp3
+  Arthur Conan Doyle - Les Aventures de Sherlock Holmes (Oeuvre integrale)/
+    La Vallee de la peur (Oeuvre integrale)/   <-- projet imbrique
+      La Vallee de la peur (Episode 1)/
+      La Vallee de la peur (Episode 2)/
+    Le Chien des Baskerville/
+    Une etude en rouge/
   Jacques Bainville - Histoire de France/
     cover.jpg
     description.txt

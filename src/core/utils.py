@@ -7,6 +7,15 @@ WHITESPACE_RE = re.compile(r'\s+')
 
 
 def sanitize_filename(name: str, max_length: int = 180) -> str:
+    """
+    Clean a filename for safe use on Windows/Mac/Linux.
+    
+    - Replaces underscores with spaces (cleaner look)
+    - Replaces colons with underscores (Windows forbids colons)
+    - Removes forbidden characters (<>"/\\|?*)
+    - Collapses multiple spaces into one
+    - Truncates at max_length while preserving word boundaries
+    """
     if not name:
         return "untitled"
     # Windows does not allow ":" in filenames; replace it while preserving readability.

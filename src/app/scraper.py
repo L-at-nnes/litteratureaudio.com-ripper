@@ -306,16 +306,22 @@ def iter_items(
                     project_tracker.register(root_name, len(item.collection_urls), logger)
                     
                 # For collective projects with a single author (not from group listing),
-                # we'll use "Author - Project" folder format at root
+                # we'll use "Author - Project" folder format at root.
+                # BUT: if we already have an author_prefixed from a parent project,
+                # we're a nested project and should stay inside the parent.
                 is_collective_single_author = (
                     item.is_collective_project
                     and item.author
                     and not group_root  # Not coming from an author/voice listing
+                    and not author_prefixed  # Not already nested inside another project
                 )
                 child_author_prefixed = None
                 if is_collective_single_author:
                     child_author_prefixed = f"{sanitize_filename(item.author)} - {root_name}"
                     item.extra[ItemExtra.AUTHOR_PREFIXED] = child_author_prefixed
+                elif author_prefixed:
+                    # We're a nested project - keep parent's author_prefixed for children
+                    child_author_prefixed = author_prefixed
                     
                 for child_url in item.collection_urls:
                     normalized_child = normalize_url(child_url)
