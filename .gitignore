@@ -12,9 +12,6 @@ env/
 dl/
 *.log
 dry-run-report.*
-summary.json
-library.csv
-summary*.json
 library*.csv
 
 # Tooling caches
