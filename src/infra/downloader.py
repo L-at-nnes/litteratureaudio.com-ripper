@@ -12,7 +12,7 @@ from mutagen.mp3 import MP3
 
 from .http import RateLimiter, head_request
 from ..core.models import AudioItem, DownloadLink, TrackItem
-from ..core.utils import sanitize_filename, unique_path
+from ..core.utils import format_size, sanitize_filename, unique_path
 
 
 FILENAME_RE = re.compile(r'filename\*?=\"?([^";]+)\"?')
@@ -135,7 +135,7 @@ def download_file(
                     handle.write(chunk)
                     total += len(chunk)
             temp_path.replace(dest_path)
-            logger.info("Downloaded %s (%s bytes)", dest_path.name, total)
+            logger.info("Downloaded %s (%s)", dest_path.name, format_size(total, "mb"))
             return dest_path
         except Exception as exc:
             if temp_path and temp_path.exists():
@@ -185,11 +185,13 @@ def download_cover(
                 ext = '.webp'
             filename = f'cover{ext}'
             dest_path = dest_dir / filename
+            total = 0
             with dest_path.open('wb') as handle:
                 for chunk in response.iter_content(chunk_size=1024 * 64):
                     if chunk:
                         handle.write(chunk)
-            logger.info("Downloaded cover %s", dest_path.name)
+                        total += len(chunk)
+            logger.info("Downloaded cover %s (%s)", dest_path.name, format_size(total, "kb"))
             return dest_path
         except Exception as exc:
             if attempt < max_attempts:

@@ -7,7 +7,7 @@
 ![License](https://img.shields.io/badge/license-MIT-green)
 ![Status](https://img.shields.io/badge/status-beta-yellow)
 
-**Beta notice:** This project is currently in beta. If you encounter any bug, please open an issue: https://github.com/L-at-nnes/litteratureaudio.com-ripper/issues
+**⚠️ Experimental notice:** This version includes experimental changes to collection/sommaire extraction and multi-author project handling. These features are under active testing and may not be stable. Please report any issues: https://github.com/L-at-nnes/litteratureaudio.com-ripper/issues
 
 Command-line tool to scrape and download audiobooks from litteratureaudio.com
 with a clean, Windows-friendly folder layout and useful metadata exports.
@@ -119,6 +119,14 @@ Some collective projects contain other collective projects (e.g., "Les Aventures
 - Nested projects are placed inside their parent project folder.
 - They use only the project name (no author prefix): `[Parent]/[NestedProject]/[Book]`.
 
+### 6) Multi-author collective projects ("Auteurs divers")
+
+Some collective projects feature works by multiple authors (e.g., "Des trains à ne pas rater", "Go West !", "Voyage à Marseille").
+
+- These projects are placed in their own independent folder at the output root: `Auteurs divers - [Project]`.
+- This applies even when discovered through an author page.
+- Each book inside keeps its original author in the metadata but shares the project folder.
+
 ## Example Folder Tree
 
 ```text
@@ -142,6 +150,10 @@ dl/
     description.txt
     Histoire de France.json
     ...mp3
+  Auteurs divers - Des trains a ne pas rater/   <-- multi-author collective
+    La Bete humaine/
+    Voyage circulaire/
+    Le Train de 8h47/
 ```
 
 ## What the scraper explicitly handles

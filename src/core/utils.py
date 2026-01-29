@@ -54,6 +54,32 @@ def strip_accents(text: str) -> str:
     return ''.join(ch for ch in normalized if not unicodedata.combining(ch))
 
 
+def format_size(size_bytes: int, unit: str = "auto") -> str:
+    """
+    Format a file size for display.
+    
+    Args:
+        size_bytes: Size in bytes.
+        unit: "kb" for KB, "mb" for MB, "auto" for auto-detect.
+    
+    Returns:
+        Human-readable size string (e.g. "3.5 Mo", "125 Ko").
+    """
+    if size_bytes is None or size_bytes < 0:
+        return "? octets"
+    
+    if unit == "kb":
+        return f"{size_bytes / 1024:.1f} Ko"
+    elif unit == "mb":
+        return f"{size_bytes / (1024 * 1024):.2f} Mo"
+    else:
+        # Auto: use KB for small files, MB for larger
+        if size_bytes < 1024 * 1024:
+            return f"{size_bytes / 1024:.1f} Ko"
+        else:
+            return f"{size_bytes / (1024 * 1024):.2f} Mo"
+
+
 def ensure_dir(path: Path) -> None:
     path.mkdir(parents=True, exist_ok=True)
 

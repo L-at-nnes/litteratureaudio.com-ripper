@@ -57,9 +57,11 @@ When you touch scraping or the pipeline, explicitly verify:
 
 - Track loading beyond the first 10 items (loop-more).
 - Collective projects (root folder + book subfolders).
+- **Multi-author collective projects** ("Auteurs divers" must go to independent folders).
 - Grouping by author / reader / member.
 - MP3-first then ZIP fallback in `--format default`.
 - Windows-safe filename cleaning (forbidden characters, `:`).
+- **Sommaire extraction thresholds** (70%/50% fallbacks for collection URLs).
 
 ### Folder naming conventions
 
@@ -68,6 +70,7 @@ When you touch scraping or the pipeline, explicitly verify:
 - **Collective project without author (e.g. Bible):** `[Project]` at output root.
 - **Nested projects:** `[Author] - [ParentProject]/[NestedProject]/[Book]` (no author prefix on nested).
 - **Author/reader/member listing:** `[Author]/[Book]` or `[Author]/[Project]/[Book]`.
+- **Multi-author collective projects:** `Auteurs divers - [Project]` at output root (even when discovered from an author page).
 
 ### Sequential project processing
 

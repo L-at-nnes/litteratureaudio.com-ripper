@@ -375,13 +375,22 @@ def _export_metadata(
     item_name: str,
     item_dir: Path,
     args: argparse.Namespace,
+    logger: logging.Logger,
     downloaded_files: list[Path] | None = None,
 ) -> None:
     """Export description.txt and JSON metadata."""
     if not args.no_description:
-        export_description(item.description_text, item_dir / "description.txt")
+        desc_path = item_dir / "description.txt"
+        export_description(item.description_text, desc_path)
+        if desc_path.exists():
+            from ..core.utils import format_size
+            logger.info("Created description.txt (%s)", format_size(desc_path.stat().st_size, "kb"))
     if not args.no_json:
-        export_json(item, item_dir / f"{item_name}.json", downloaded_files or [])
+        json_path = item_dir / f"{item_name}.json"
+        export_json(item, json_path, downloaded_files or [])
+        if json_path.exists():
+            from ..core.utils import format_size
+            logger.info("Created %s (%s)", json_path.name, format_size(json_path.stat().st_size, "kb"))
 
 
 def _download_audio_files(
@@ -495,7 +504,7 @@ def download_item(
 
     # Step 6a: Metadata-only mode (--metadata-only)
     if args.metadata_only:
-        _export_metadata(item, item_name, item_dir, args, downloaded_files=[])
+        _export_metadata(item, item_name, item_dir, args, logger, downloaded_files=[])
         if summary:
             summary.add_item(item, item_dir, downloaded_files=[])
         if project_tracker and collection_root:
@@ -506,7 +515,7 @@ def download_item(
 
     # Step 6b: Collection root (skip_download=True) - just metadata
     if skip_download:
-        _export_metadata(item, item_name, item_dir, args, downloaded_files=[])
+        _export_metadata(item, item_name, item_dir, args, logger, downloaded_files=[])
         if summary:
             summary.add_item(item, item_dir, downloaded_files=[])
         return []
@@ -517,7 +526,7 @@ def download_item(
     )
 
     # Step 8: Export metadata with downloaded files list
-    _export_metadata(item, item_name, item_dir, args, downloaded_files)
+    _export_metadata(item, item_name, item_dir, args, logger, downloaded_files)
 
     # Step 9: Update trackers
     if summary:

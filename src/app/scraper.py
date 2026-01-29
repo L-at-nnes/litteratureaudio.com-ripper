@@ -305,6 +305,14 @@ def iter_items(
                 if project_tracker:
                     project_tracker.register(root_name, len(item.collection_urls), logger)
                     
+                # Special case: "Auteurs divers" collective projects should ALWAYS be independent,
+                # even if found from an author listing. They go in their own folder at root.
+                is_multi_author_collective = (
+                    item.is_collective_project
+                    and item.author
+                    and item.author.lower() == "auteurs divers"
+                )
+                
                 # For collective projects with a single author (not from group listing),
                 # we'll use "Author - Project" folder format at root.
                 # BUT: if we already have an author_prefixed from a parent project,
@@ -316,7 +324,18 @@ def iter_items(
                     and not author_prefixed  # Not already nested inside another project
                 )
                 child_author_prefixed = None
-                if is_collective_single_author:
+                child_group_root = group_root  # May be overridden for multi-author collectives
+                
+                if is_multi_author_collective:
+                    # Multi-author collective: gets its own folder "Auteurs divers - Project" at root
+                    # This overrides any parent group_root - children go to independent folder
+                    child_author_prefixed = f"Auteurs divers - {root_name}"
+                    item.extra[ItemExtra.AUTHOR_PREFIXED] = child_author_prefixed
+                    # Clear group_root so children DON'T inherit the original author's folder
+                    child_group_root = None  # Critical: clears inheritance for children
+                    # Also clear from item itself
+                    item.extra.pop(ItemExtra.GROUP_ROOT, None)
+                elif is_collective_single_author:
                     child_author_prefixed = f"{sanitize_filename(item.author)} - {root_name}"
                     item.extra[ItemExtra.AUTHOR_PREFIXED] = child_author_prefixed
                 elif author_prefixed:
@@ -326,8 +345,8 @@ def iter_items(
                 for child_url in item.collection_urls:
                     normalized_child = normalize_url(child_url)
                     collection_map[normalized_child] = root_name
-                    if group_root:
-                        group_map[normalized_child] = group_root
+                    if child_group_root:
+                        group_map[normalized_child] = child_group_root
                     if child_author_prefixed:
                         author_prefixed_map[normalized_child] = child_author_prefixed
                     if normalized_child not in seen:

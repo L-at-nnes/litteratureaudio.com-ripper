@@ -7,7 +7,7 @@
 ![Licence](https://img.shields.io/badge/licence-MIT-green)
 ![Statut](https://img.shields.io/badge/statut-beta-yellow)
 
-**Notice beta :** Ce projet est actuellement en beta. Au moindre bug, merci d'ouvrir une issue : https://github.com/L-at-nnes/litteratureaudio.com-ripper/issues
+**⚠️ Notice experimentale :** Cette version inclut des changements experimentaux sur l'extraction des sommaires/collections et la gestion des projets multi-auteurs. Ces fonctionnalites sont en cours de test et peuvent ne pas etre stables. Merci de signaler tout probleme : https://github.com/L-at-nnes/litteratureaudio.com-ripper/issues
 
 Outil en ligne de commande pour scraper et telecharger les livres audio depuis
 litteratureaudio.com, avec une arborescence propre (compatible Windows) et des
@@ -120,6 +120,14 @@ Certains projets collectifs contiennent d'autres projets collectifs (ex: "Les Av
 - Les projets imbriques sont places dans le dossier du projet parent.
 - Ils utilisent uniquement le nom du projet (sans prefixe auteur) : `[Parent]/[ProjetImbrique]/[Livre]`.
 
+### 6) Projets collectifs multi-auteurs ("Auteurs divers")
+
+Certains projets collectifs regroupent des oeuvres de plusieurs auteurs (ex: "Des trains a ne pas rater", "Go West !", "Voyage a Marseille").
+
+- Ces projets sont places dans leur propre dossier independant a la racine : `Auteurs divers - [Projet]`.
+- Cela s'applique meme s'ils sont decouverts via une page auteur.
+- Chaque livre garde son auteur d'origine dans les metadonnees mais partage le dossier du projet.
+
 ## Exemple d'arborescence
 
 ```text
@@ -143,6 +151,10 @@ dl/
     description.txt
     Histoire de France.json
     ...mp3
+  Auteurs divers - Des trains a ne pas rater/   <-- projet multi-auteurs
+    La Bete humaine/
+    Voyage circulaire/
+    Le Train de 8h47/
 ```
 
 ## Ce que le scraper gere explicitement

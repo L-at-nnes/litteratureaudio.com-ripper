@@ -304,6 +304,17 @@ def extract_collection_urls(soup: BeautifulSoup, page_url: str, author_slug: Opt
         return []
 
     station = entry.find("div", class_="station-content")
+    
+    # Count all livre-audio links in station-content to decide if block-loop-items is complete.
+    total_station_links = set()
+    if station:
+        for a in station.find_all("a", href=True):
+            href = a["href"]
+            if "/livre-audio-gratuit-mp3/" in href and href.endswith(".html"):
+                full_url = urljoin(page_url, href)
+                if full_url != page_url:
+                    total_station_links.add(full_url)
+    
     if station:
         block = station.find("div", class_="block-loop-items")
         if block:
@@ -314,7 +325,9 @@ def extract_collection_urls(soup: BeautifulSoup, page_url: str, author_slug: Opt
                     full_url = urljoin(page_url, href)
                     if full_url != page_url:
                         links.add(full_url)
-            if links:
+            # Only use block-loop-items if it has MOST of the links (>70%)
+            # Otherwise there are probably more links in plain paragraphs.
+            if links and len(links) >= len(total_station_links) * 0.7:
                 return sorted(links)
 
     # Prefer block-loop-items sections that match collection slug tokens.
@@ -367,10 +380,13 @@ def extract_collection_urls(soup: BeautifulSoup, page_url: str, author_slug: Opt
                 best_score = score
                 best_links = block_links
 
-    if best_links:
+    # Only use best_links if it covers most of station-content (>50%)
+    # Otherwise fall through to collect ALL links from station-content.
+    if best_links and len(best_links) >= len(total_station_links) * 0.5:
         return sorted(best_links)
 
     # Fallback: match slug tokens across all entry-content links (useful for the Bible page).
+    # But only use this if we find a significant number of matches.
     if slug_tokens:
         matched = set()
         for a in entry.find_all("a", href=True):
@@ -382,7 +398,9 @@ def extract_collection_urls(soup: BeautifulSoup, page_url: str, author_slug: Opt
                 full_url = urljoin(page_url, href)
                 if full_url != page_url:
                     matched.add(full_url)
-        if matched:
+        # Only use slug matching if we found a reasonable number of links (>10)
+        # Otherwise fall through to collect ALL links from station-content.
+        if len(matched) > 10:
             return sorted(matched)
 
     # Special case: Bible project.
@@ -398,6 +416,21 @@ def extract_collection_urls(soup: BeautifulSoup, page_url: str, author_slug: Opt
                     matched.add(full_url)
         if matched:
             return sorted(matched)
+
+    # Final fallback: collect ALL livre-audio links from station-content.
+    # This handles sommaire pages like "La Comédie humaine" where links don't
+    # share slug tokens with the parent page (e.g. individual Balzac works).
+    if station:
+        all_links = set()
+        for a in station.find_all("a", href=True):
+            href = a["href"]
+            if "/livre-audio-gratuit-mp3/" not in href or not href.endswith(".html"):
+                continue
+            full_url = urljoin(page_url, href)
+            if full_url != page_url:
+                all_links.add(full_url)
+        if all_links:
+            return sorted(all_links)
 
     links = set()
     for art in entry.find_all("article"):
