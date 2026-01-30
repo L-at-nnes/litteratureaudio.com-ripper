@@ -71,7 +71,10 @@ def run_pipeline(
     for url in urls:
         project_items = list(iter_items([url], session, rate_limiter, args, logger, project_tracker))
         
-        if args.threads <= 1:
+        # Sequential mode: one file at a time (cleaner logs)
+        effective_threads = 1 if getattr(args, 'sequential', False) else args.threads
+        
+        if effective_threads <= 1:
             for item in project_items:
                 item_count += 1
                 downloaded_total += len(
@@ -89,7 +92,7 @@ def run_pipeline(
                     )
                 )
         else:
-            with ThreadPoolExecutor(max_workers=args.threads) as executor:
+            with ThreadPoolExecutor(max_workers=effective_threads) as executor:
                 futures = set()
                 for item in project_items:
                     item_count += 1
@@ -108,7 +111,7 @@ def run_pipeline(
                             folder_registry,
                         )
                     )
-                    if len(futures) >= args.threads * 2:
+                    if len(futures) >= effective_threads * 2:
                         done, futures = wait(futures, return_when=FIRST_COMPLETED)
                         for future in done:
                             try:

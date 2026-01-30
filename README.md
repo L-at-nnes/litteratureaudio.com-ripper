@@ -7,7 +7,11 @@
 ![License](https://img.shields.io/badge/license-MIT-green)
 ![Status](https://img.shields.io/badge/status-beta-yellow)
 
-**⚠️ Experimental notice:** This version includes experimental changes to collection/sommaire extraction and multi-author project handling. These features are under active testing and may not be stable. Please report any issues: https://github.com/L-at-nnes/litteratureaudio.com-ripper/issues
+**⚠️ Beta notice:** This version includes significant improvements to collection/sommaire extraction. Please report any issues: https://github.com/L-at-nnes/litteratureaudio.com-ripper/issues
+
+**Known limitations:**
+- Books with multiple versions (different readers) may be merged into one folder
+- Some edge cases with inverted author names in URLs are handled but may need refinement
 
 Command-line tool to scrape and download audiobooks from litteratureaudio.com
 with a clean, Windows-friendly folder layout and useful metadata exports.
@@ -60,6 +64,7 @@ The table below covers every CLI option exposed by the tool.
 | `--txt` | file path | Text file (one URL per line, `#` ignored) | `python main.py --txt audiobooks.txt` |
 | `--output` | folder path | Output root folder (default: `./dl`) | `python main.py --output D:\Audio` |
 | `--threads` | integer | Number of worker threads (default: `4`) | `python main.py --threads 4 --txt audiobooks.txt` |
+| `--sequential` | flag | Download one file at a time (easier logs) | `python main.py --sequential --txt audiobooks.txt` |
 | `--sleep` | float (seconds) | Minimum delay between HTTP requests | `python main.py --sleep 0.5 --txt audiobooks.txt` |
 | `--format` | `default`, `mp3`, `zip`, `mp3+zip`, `all`, `unzip` | Download policy | `python main.py --format default --txt audiobooks.txt` |
 | `--no-json` | flag | Do not export JSON metadata | `python main.py --no-json URL` |
@@ -123,9 +128,9 @@ Some collective projects contain other collective projects (e.g., "Les Aventures
 
 Some collective projects feature works by multiple authors (e.g., "Des trains à ne pas rater", "Go West !", "Voyage à Marseille").
 
-- These projects are placed in their own independent folder at the output root: `Auteurs divers - [Project]`.
-- This applies even when discovered through an author page.
-- Each book inside keeps its original author in the metadata but shares the project folder.
+- These projects stay inside their parent folder (author/reader/member context).
+- The author is recorded as "Auteurs divers" in the metadata.
+- Each book inside keeps its original author in the JSON metadata.
 
 ## Example Folder Tree
 
@@ -139,6 +144,11 @@ dl/
       ...mp3
     Le Comte de Monte-Cristo (Tome 2)/
       ...mp3
+  Arthur Conan Doyle/                                    <-- from author listing
+    Go West !/                                           <-- multi-author collective (stays inside)
+      La Capture du feu/
+      La Vallee du desespoir/
+    La Bande mouchetee/
   Arthur Conan Doyle - Les Aventures de Sherlock Holmes (Oeuvre integrale)/
     La Vallee de la peur (Oeuvre integrale)/   <-- nested project
       La Vallee de la peur (Episode 1)/
@@ -150,10 +160,6 @@ dl/
     description.txt
     Histoire de France.json
     ...mp3
-  Auteurs divers - Des trains a ne pas rater/   <-- multi-author collective
-    La Bete humaine/
-    Voyage circulaire/
-    Le Train de 8h47/
 ```
 
 ## What the scraper explicitly handles

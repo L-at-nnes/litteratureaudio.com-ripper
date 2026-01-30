@@ -1,4 +1,5 @@
 import logging
+import sys
 from pathlib import Path
 
 
@@ -11,6 +12,15 @@ def setup_logging() -> logging.Logger:
     file_handler.setLevel(logging.DEBUG)
     file_formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
     file_handler.setFormatter(file_formatter)
+
+    # Force UTF-8 on console for Windows (handles French accented characters)
+    # On Windows, stdout may default to cp1252 which breaks accented chars
+    if sys.platform == "win32":
+        try:
+            sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+            sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+        except Exception:
+            pass  # Python < 3.7 or stdout not a real file
 
     console_handler = logging.StreamHandler()
     console_handler.setLevel(logging.INFO)

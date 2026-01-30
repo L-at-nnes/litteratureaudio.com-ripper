@@ -129,9 +129,10 @@ class ProjectProgressTracker:
         with self.lock:
             if project not in self.total_by_project:
                 return
-            self.done_by_project[project] += 1
-            done = self.done_by_project[project]
             total = self.total_by_project[project]
+            # Cap at total to avoid showing 84/78 type issues when duplicates are processed
+            self.done_by_project[project] = min(self.done_by_project[project] + 1, total)
+            done = self.done_by_project[project]
         logger.info("Project progress: %s %s/%s (book: %s)", project, done, total, book_title)
 
 

@@ -272,11 +272,20 @@ def extract_author_slug(soup: BeautifulSoup) -> Optional[str]:
 
 
 def is_collection_page(soup: BeautifulSoup, url: str, title: Optional[str], description: Optional[str]) -> bool:
+    # Check body classes for sommaire marker
     body = soup.find("body")
     if body and body.get("class"):
         for cls in body.get("class"):
             if "sommaire" in cls:
                 return True
+    
+    # Also check main article classes (some pages have category-sommaire on the article)
+    article = soup.find("article", class_=lambda c: c and "post" in c)
+    if article and article.get("class"):
+        for cls in article.get("class"):
+            if "sommaire" in cls:
+                return True
+    
     entry = soup.find("div", class_="entry-content")
     if entry:
         station = entry.find("div", class_="station-content")
@@ -359,48 +368,74 @@ def extract_collection_urls(soup: BeautifulSoup, page_url: str, author_slug: Opt
             "l",
         }
         author_tokens = author_slug.split("-") if author_slug else []
+        # Build slug tokens - these are meaningful tokens from the URL
         slug_tokens = {t for t in tokens if t and t not in stop and t not in author_tokens}
+        
+        # Also try inverted author slug formats (e.g., las-cases-emmanuel-de vs emmanuel-de-las-cases)
+        # Some pages link to chapters with the author name inverted
+        if author_slug:
+            author_parts = author_slug.split("-")
+            # Try common inversions: lastname-firstname or firstname-lastname
+            if len(author_parts) >= 2:
+                # Assume format is firstname-...-lastname, try lastname-...-firstname
+                inverted_author_slug = "-".join(author_parts[-1:] + author_parts[:-1])
+                inverted_tokens = inverted_author_slug.split("-")
+            else:
+                inverted_tokens = []
+        else:
+            inverted_tokens = []
 
     blocks = entry.find_all("div", class_="block-loop-items")
-    best_links: set[str] = set()
-    best_score = 0
+    # Collect ALL links from blocks where >50% of unique links match the slug tokens
+    # This handles sommaire pages with multiple block-loop-items sections
+    all_matching_blocks_links: set[str] = set()
     if blocks and slug_tokens:
         for block in blocks:
             block_links = set()
-            score = 0
+            matching_links = set()
             for a in block.find_all("a", href=True):
                 href = a["href"]
                 if "/livre-audio-gratuit-mp3/" not in href or not href.endswith(".html"):
                     continue
-                block_links.add(urljoin(page_url, href))
+                full_url = urljoin(page_url, href)
+                block_links.add(full_url)
                 link_slug = slug_from_url(href)
                 if any(token in link_slug for token in slug_tokens):
-                    score += 1
-            if score > best_score and block_links:
-                best_score = score
-                best_links = block_links
+                    matching_links.add(full_url)
+                # Also check inverted author tokens for links with inverted names
+                elif inverted_tokens and any(token in link_slug for token in inverted_tokens):
+                    matching_links.add(full_url)
+            # Only consider blocks where >50% of UNIQUE links match the slug tokens
+            # This prevents selecting "suggestions" blocks with mixed content
+            match_ratio = len(matching_links) / len(block_links) if block_links else 0
+            if match_ratio > 0.5:
+                all_matching_blocks_links.update(block_links)
 
-    # Only use best_links if it covers most of station-content (>50%)
+    # Only use matching blocks if they cover most of station-content (>50%)
     # Otherwise fall through to collect ALL links from station-content.
-    if best_links and len(best_links) >= len(total_station_links) * 0.5:
-        return sorted(best_links)
+    if all_matching_blocks_links and len(all_matching_blocks_links) >= len(total_station_links) * 0.5:
+        return sorted(all_matching_blocks_links)
 
-    # Fallback: match slug tokens across all entry-content links (useful for the Bible page).
-    # But only use this if we find a significant number of matches.
-    if slug_tokens:
+    # Fallback: match slug tokens across all entry-content links (useful for sommaire pages).
+    # Require at least 2 matching tokens to be more precise and avoid false positives.
+    # This must come BEFORE the station-content fallback to handle pages like Las Cases
+    # where sommaire chapters have inverted author names in URLs.
+    if slug_tokens and len(slug_tokens) >= 2:
         matched = set()
         for a in entry.find_all("a", href=True):
             href = a["href"]
             if "/livre-audio-gratuit-mp3/" not in href or not href.endswith(".html"):
                 continue
             link_slug = slug_from_url(href)
-            if any(token in link_slug for token in slug_tokens):
+            # Count how many tokens match
+            matching_count = sum(1 for token in slug_tokens if token in link_slug)
+            # Require at least 2 matching tokens for precision
+            if matching_count >= 2:
                 full_url = urljoin(page_url, href)
                 if full_url != page_url:
                     matched.add(full_url)
-        # Only use slug matching if we found a reasonable number of links (>10)
-        # Otherwise fall through to collect ALL links from station-content.
-        if len(matched) > 10:
+        # Only use slug matching if we found a reasonable number of links (>=3)
+        if len(matched) >= 3:
             return sorted(matched)
 
     # Special case: Bible project.
@@ -420,6 +455,7 @@ def extract_collection_urls(soup: BeautifulSoup, page_url: str, author_slug: Opt
     # Final fallback: collect ALL livre-audio links from station-content.
     # This handles sommaire pages like "La Comédie humaine" where links don't
     # share slug tokens with the parent page (e.g. individual Balzac works).
+    # Only use this if the more precise matching above didn't work.
     if station:
         all_links = set()
         for a in station.find_all("a", href=True):

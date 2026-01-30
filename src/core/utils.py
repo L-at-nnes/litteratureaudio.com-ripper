@@ -10,25 +10,28 @@ def sanitize_filename(name: str, max_length: int = 180) -> str:
     """
     Clean a filename for safe use on Windows/Mac/Linux.
     
+    - Replaces colons with " -" for readability (Windows forbids colons)
     - Replaces underscores with spaces (cleaner look)
-    - Replaces colons with underscores (Windows forbids colons)
     - Removes forbidden characters (<>"/\\|?*)
     - Collapses multiple spaces into one
+    - Strips trailing/leading whitespace
     - Truncates at max_length while preserving word boundaries
     """
     if not name:
         return "untitled"
-    # Windows does not allow ":" in filenames; replace it while preserving readability.
-    name = name.replace(":", "COLON_TOKEN")
+    # Windows does not allow ":" in filenames; replace with " -" for readability.
+    name = name.replace(":", " -")
+    # Replace underscores with spaces for cleaner look.
     name = name.replace("_", " ")
-    name = name.replace("COLON_TOKEN", "_")
+    # Remove forbidden characters.
     name = INVALID_CHARS_RE.sub('', name)
+    # Collapse multiple spaces and strip.
     name = WHITESPACE_RE.sub(' ', name).strip()
     if len(name) > max_length:
         cut = name[:max_length]
         if ' ' in cut:
             cut = cut.rsplit(' ', 1)[0]
-        name = cut
+        name = cut.strip()
     return name or "untitled"
 
 
