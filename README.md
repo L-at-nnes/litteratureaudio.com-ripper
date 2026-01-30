@@ -58,26 +58,25 @@ python main.py --txt audiobooks.txt --threads 4 --sleep 0.5 --format default
 
 The table below covers every CLI option exposed by the tool.
 
-| Option | Type / values | Description | Example |
-| --- | --- | --- | --- |
-| `URL ...` | one or more URLs | Direct URL(s) to process | `python main.py https://.../book.html` |
-| `--txt` | file path | Text file (one URL per line, `#` ignored) | `python main.py --txt audiobooks.txt` |
-| `--output` | folder path | Output root folder (default: `./dl`) | `python main.py --output D:\Audio` |
-| `--threads` | integer | Number of worker threads (default: `4`) | `python main.py --threads 4 --txt audiobooks.txt` |
-| `--sequential` | flag | Download one file at a time (easier logs) | `python main.py --sequential --txt audiobooks.txt` |
-| `--sleep` | float (seconds) | Minimum delay between HTTP requests | `python main.py --sleep 0.5 --txt audiobooks.txt` |
-| `--format` | `default`, `mp3`, `zip`, `mp3+zip`, `all`, `unzip` | Download policy | `python main.py --format default --txt audiobooks.txt` |
-| `--no-json` | flag | Do not export JSON metadata | `python main.py --no-json URL` |
-| `--no-cover` | flag | Do not download covers | `python main.py --no-cover URL` |
-| `--no-description` | flag | Do not write `description.txt` | `python main.py --no-description URL` |
-| `--no-id3` | flag | Do not write ID3 tags | `python main.py --no-id3 URL` |
-| `--max-pages` | integer | Limit listing pagination (author / reader / member) | `python main.py --max-pages 2 URL_LISTING` |
-| `--dry-run` | flag | Extract only, no audio written | `python main.py --dry-run --txt audiobooks.txt` |
-| `--metadata-only` | flag | Write cover + description + JSON only | `python main.py --metadata-only URL` |
-| `--summary-report` | JSON file path (optional) | Write a summary report (default: `summary-report.json` if no path given) | `python main.py --summary-report --txt audiobooks.txt` |
-| `--csv-report` | CSV file path (optional) | Write a CSV for indexing (default: `report.csv` if no path given) | `python main.py --csv-report --txt audiobooks.txt` |
-| `--verify` | folder path | Re-scan a folder and report missing tracks/files | `python main.py --verify dl` |
-| `--no-duplicates` | flag | Create shortcuts instead of re-downloading duplicates | `python main.py --no-duplicates --txt audiobooks.txt` |
+| Option | Type / values | Default | Description | Example |
+| --- | --- | --- | --- | --- |
+| `URL ...` | one or more URLs | | Direct URL(s) to process | `python main.py https://.../book.html` |
+| `--txt` | file path | | Text file (one URL per line, `#` ignored) | `python main.py --txt audiobooks.txt` |
+| `--output` | folder path | `./dl` | Output root folder | `python main.py --output D:\Audio` |
+| `--threads` | integer | `1` | Parallel downloads (1 = sequential) | `python main.py --threads 4 --txt audiobooks.txt` |
+| `--sleep` | float (seconds) | `0` | Minimum delay between HTTP requests | `python main.py --sleep 0.5 --txt audiobooks.txt` |
+| `--format` | `default`, `mp3`, `zip`, `mp3+zip`, `all`, `unzip` | `default` | Download policy | `python main.py --format mp3 --txt audiobooks.txt` |
+| `--no-json` | flag | `false` | Do not export JSON metadata | `python main.py --no-json URL` |
+| `--no-cover` | flag | `false` | Do not download covers | `python main.py --no-cover URL` |
+| `--no-description` | flag | `false` | Do not write `description.txt` | `python main.py --no-description URL` |
+| `--no-id3` | flag | `false` | Do not write ID3 tags | `python main.py --no-id3 URL` |
+| `--max-pages` | integer | `0` (no limit) | Limit listing pagination (author / reader / member) | `python main.py --max-pages 2 URL_LISTING` |
+| `--dry-run` | flag | `false` | Extract only, no audio written | `python main.py --dry-run --txt audiobooks.txt` |
+| `--metadata-only` | flag | `false` | Write cover + description + JSON only | `python main.py --metadata-only URL` |
+| `--summary-report` | JSON file path | | Write a summary report (default filename: `summary-report.json`) | `python main.py --summary-report --txt audiobooks.txt` |
+| `--csv-report` | CSV file path | | Write a CSV for indexing (default filename: `report.csv`) | `python main.py --csv-report --txt audiobooks.txt` |
+| `--verify` | folder path | | Re-scan a folder and report missing tracks/files | `python main.py --verify dl` |
+| `--no-duplicates` | flag | `false` | Create shortcuts instead of re-downloading duplicates | `python main.py --no-duplicates --txt audiobooks.txt` |
 
 ### Useful Command Recipes
 
@@ -90,6 +89,31 @@ The table below covers every CLI option exposed by the tool.
 | Metadata only | `python main.py --metadata-only --txt audiobooks.txt --threads 4 --sleep 0.5 --format default` |
 | Dry-run + reports | `python main.py --dry-run --summary-report summary.json --csv-report library.csv --txt audiobooks.txt` |
 | Verify existing output | `python main.py --verify dl` |
+
+### Windows Console Encoding (UTF-8)
+
+French text (accented characters like é, è, à, ê, œ) may display incorrectly in Windows PowerShell or CMD. The log file (`litteratureaudio.log`) is always correctly encoded in UTF-8.
+
+To fix console display in **PowerShell**, run this before the script:
+
+```powershell
+[Console]::OutputEncoding = [System.Text.Encoding]::UTF8
+python main.py ...
+```
+
+Or create a one-liner:
+
+```powershell
+[Console]::OutputEncoding = [System.Text.Encoding]::UTF8; python main.py --txt audiobooks.txt
+```
+
+To make it permanent in PowerShell, add to your `$PROFILE`:
+
+```powershell
+[Console]::OutputEncoding = [System.Text.Encoding]::UTF8
+```
+
+In **CMD**, run `chcp 65001` first (may require a font that supports Unicode).
 
 ## Folder Layout Rules (expected behavior)
 

@@ -59,26 +59,25 @@ python main.py --txt audiobooks.txt --threads 4 --sleep 0.5 --format default
 
 Le tableau ci-dessous couvre toutes les options exposees par la CLI.
 
-| Option | Type / valeurs | Description | Exemple |
-| --- | --- | --- | --- |
-| `URL ...` | une ou plusieurs URL | URL(s) directes a traiter | `python main.py https://.../livre.html` |
-| `--txt` | chemin fichier | Fichier texte (une URL par ligne, `#` ignore) | `python main.py --txt audiobooks.txt` |
-| `--output` | chemin dossier | Dossier racine de sortie (defaut: `./dl`) | `python main.py --output D:\Audio` |
-| `--threads` | entier | Nombre de workers (defaut: `4`) | `python main.py --threads 4 --txt audiobooks.txt` |
-| `--sequential` | flag | Telecharge un fichier a la fois (logs lisibles) | `python main.py --sequential --txt audiobooks.txt` |
-| `--sleep` | float (secondes) | Delai minimum entre requetes HTTP | `python main.py --sleep 0.5 --txt audiobooks.txt` |
-| `--format` | `default`, `mp3`, `zip`, `mp3+zip`, `all`, `unzip` | Politique de telechargement | `python main.py --format default --txt audiobooks.txt` |
-| `--no-json` | flag | Ne pas exporter le JSON metadata | `python main.py --no-json URL` |
-| `--no-cover` | flag | Ne pas telecharger les covers | `python main.py --no-cover URL` |
-| `--no-description` | flag | Ne pas ecrire `description.txt` | `python main.py --no-description URL` |
-| `--no-id3` | flag | Ne pas ecrire les tags ID3 | `python main.py --no-id3 URL` |
-| `--max-pages` | entier | Limiter la pagination des listings (auteur / voix / membre) | `python main.py --max-pages 2 URL_LISTING` |
-| `--dry-run` | flag | Extraction seule, sans ecriture audio | `python main.py --dry-run --txt audiobooks.txt` |
-| `--metadata-only` | flag | Ecrit cover + description + JSON uniquement | `python main.py --metadata-only URL` |
-| `--summary-report` | chemin JSON (optionnel) | Ecrit un resume (defaut: `summary-report.json` si pas de chemin) | `python main.py --summary-report --txt audiobooks.txt` |
-| `--csv-report` | chemin CSV (optionnel) | Ecrit un CSV d'indexation (defaut: `report.csv` si pas de chemin) | `python main.py --csv-report --txt audiobooks.txt` |
-| `--verify` | chemin dossier | Re-scan un dossier et signale les manques | `python main.py --verify dl` |
-| `--no-duplicates` | flag | Cree des raccourcis au lieu de re-telecharger les doublons | `python main.py --no-duplicates --txt audiobooks.txt` |
+| Option | Type / valeurs | Défaut | Description | Exemple |
+| --- | --- | --- | --- | --- |
+| `URL ...` | une ou plusieurs URL | | URL(s) directes à traiter | `python main.py https://.../livre.html` |
+| `--txt` | chemin fichier | | Fichier texte (une URL par ligne, `#` ignoré) | `python main.py --txt audiobooks.txt` |
+| `--output` | chemin dossier | `./dl` | Dossier racine de sortie | `python main.py --output D:\Audio` |
+| `--threads` | entier | `1` | Téléchargements parallèles (1 = séquentiel) | `python main.py --threads 4 --txt audiobooks.txt` |
+| `--sleep` | float (secondes) | `0` | Délai minimum entre requêtes HTTP | `python main.py --sleep 0.5 --txt audiobooks.txt` |
+| `--format` | `default`, `mp3`, `zip`, `mp3+zip`, `all`, `unzip` | `default` | Politique de téléchargement | `python main.py --format mp3 --txt audiobooks.txt` |
+| `--no-json` | flag | `false` | Ne pas exporter le JSON metadata | `python main.py --no-json URL` |
+| `--no-cover` | flag | `false` | Ne pas télécharger les covers | `python main.py --no-cover URL` |
+| `--no-description` | flag | `false` | Ne pas écrire `description.txt` | `python main.py --no-description URL` |
+| `--no-id3` | flag | `false` | Ne pas écrire les tags ID3 | `python main.py --no-id3 URL` |
+| `--max-pages` | entier | `0` (illimité) | Limiter la pagination des listings (auteur / voix / membre) | `python main.py --max-pages 2 URL_LISTING` |
+| `--dry-run` | flag | `false` | Extraction seule, sans écriture audio | `python main.py --dry-run --txt audiobooks.txt` |
+| `--metadata-only` | flag | `false` | Écrit cover + description + JSON uniquement | `python main.py --metadata-only URL` |
+| `--summary-report` | chemin JSON | | Écrit un résumé (nom par défaut: `summary-report.json`) | `python main.py --summary-report --txt audiobooks.txt` |
+| `--csv-report` | chemin CSV | | Écrit un CSV d'indexation (nom par défaut: `report.csv`) | `python main.py --csv-report --txt audiobooks.txt` |
+| `--verify` | chemin dossier | | Re-scan un dossier et signale les manques | `python main.py --verify dl` |
+| `--no-duplicates` | flag | `false` | Crée des raccourcis au lieu de re-télécharger les doublons | `python main.py --no-duplicates --txt audiobooks.txt` |
 
 ### Exemples de commandes utiles
 

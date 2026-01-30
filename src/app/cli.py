@@ -20,8 +20,7 @@ def parse_args(argv: Iterable[str] | None = None) -> argparse.Namespace:
     parser.add_argument("urls", nargs="*", help="URLs to process")
     parser.add_argument("--txt", dest="txt_file", help="Text file with one URL per line")
     parser.add_argument("--output", default="./dl", help="Output folder")
-    parser.add_argument("--threads", type=int, default=4, help="Number of worker threads")
-    parser.add_argument("--sequential", action="store_true", help="Download one file at a time (easier to read logs)")
+    parser.add_argument("--threads", type=int, default=1, help="Number of parallel downloads (default: 1, sequential)")
     parser.add_argument("--sleep", type=float, default=0, help="Delay between requests (seconds)")
     parser.add_argument(
         "--format",

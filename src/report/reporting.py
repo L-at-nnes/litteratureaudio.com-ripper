@@ -124,6 +124,7 @@ class ProjectProgressTracker:
         logger.info("Project detected: %s (items: %s)", project, total)
 
     def mark_done(self, project: str, book_title: str, logger: logging.Logger) -> None:
+        """Track project progress. Logging disabled due to unreliable counting with duplicates."""
         if not project:
             return
         with self.lock:
@@ -132,8 +133,8 @@ class ProjectProgressTracker:
             total = self.total_by_project[project]
             # Cap at total to avoid showing 84/78 type issues when duplicates are processed
             self.done_by_project[project] = min(self.done_by_project[project] + 1, total)
-            done = self.done_by_project[project]
-        logger.info("Project progress: %s %s/%s (book: %s)", project, done, total, book_title)
+            # Note: Progress logging removed - counter is unreliable when same project
+            # appears multiple times (e.g., Zola's Rougon-Macquart referenced from multiple pages)
 
 
 class DryRunReporter:

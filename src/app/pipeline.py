@@ -71,8 +71,8 @@ def run_pipeline(
     for url in urls:
         project_items = list(iter_items([url], session, rate_limiter, args, logger, project_tracker))
         
-        # Sequential mode: one file at a time (cleaner logs)
-        effective_threads = 1 if getattr(args, 'sequential', False) else args.threads
+        # Number of parallel download threads (default: 1 = sequential)
+        effective_threads = args.threads
         
         if effective_threads <= 1:
             for item in project_items:
