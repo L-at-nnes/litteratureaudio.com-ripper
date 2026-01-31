@@ -4,15 +4,22 @@ import sys
 from pathlib import Path
 
 
-def setup_logging() -> logging.Logger:
+def setup_logging(no_log: bool = False) -> logging.Logger:
+    """Set up logging for the application.
+    
+    Args:
+        no_log: If True, only log to console, no file output.
+    """
     logger = logging.getLogger("litteratureaudio")
     logger.setLevel(logging.DEBUG)
 
-    log_file = Path("litteratureaudio.log")
-    file_handler = logging.FileHandler(log_file, encoding="utf-8-sig")
-    file_handler.setLevel(logging.DEBUG)
-    file_formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
-    file_handler.setFormatter(file_formatter)
+    # File handler (unless --no-log)
+    if not no_log:
+        log_file = Path("litteratureaudio.log")
+        file_handler = logging.FileHandler(log_file, encoding="utf-8-sig")
+        file_handler.setLevel(logging.DEBUG)
+        file_formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
+        file_handler.setFormatter(file_formatter)
 
     # Force UTF-8 on console for Windows (handles French accented characters)
     # Create a proper UTF-8 stream wrapper for the console handler
@@ -38,7 +45,8 @@ def setup_logging() -> logging.Logger:
 
     # Avoid duplicate handlers if main() is called multiple times.
     if not logger.handlers:
-        logger.addHandler(file_handler)
+        if not no_log:
+            logger.addHandler(file_handler)
         logger.addHandler(console_handler)
     return logger
 

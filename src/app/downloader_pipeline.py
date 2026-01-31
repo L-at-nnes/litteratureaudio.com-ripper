@@ -138,18 +138,15 @@ def build_download_plan(
 
 def create_relative_shortcut(target_path: Path, shortcut_dir: Path, shortcut_name: str, logger: logging.Logger) -> bool:
     """
-    Create a shortcut to avoid re-downloading duplicates.
+    Create a shortcut/redirect file to avoid re-downloading duplicates.
     
-    On Windows: Creates a directory junction (works without admin rights).
-                Junctions MUST use absolute paths - that's how NTFS works.
-                Falls back to a .redirect.txt file if junction creation fails.
-    
-    On Unix: Creates a relative symlink so it stays portable.
+    Creates a .redirect.txt file with relative path information.
+    This is portable across systems and doesn't require special permissions.
     
     Args:
         target_path: The folder that already exists (where the files are).
         shortcut_dir: The parent folder where the shortcut should be created.
-        shortcut_name: The name for the shortcut (will look like a normal folder).
+        shortcut_name: The name for the shortcut entry.
         logger: For logging what we did.
     
     Returns:
@@ -158,50 +155,24 @@ def create_relative_shortcut(target_path: Path, shortcut_dir: Path, shortcut_nam
     try:
         shortcut_dir.mkdir(parents=True, exist_ok=True)
         
-        # Calculate relative path - used for symlinks and the fallback text file
+        # Calculate relative path
         try:
             rel_path = os.path.relpath(target_path, shortcut_dir)
         except ValueError:
             # Different drives on Windows - relative path impossible
             rel_path = str(target_path)
         
-        if os.name == 'nt':
-            # Windows: Directory junctions are the best option (no admin rights needed)
-            # IMPORTANT: Junctions require ABSOLUTE paths, not relative!
-            junction_path = shortcut_dir / shortcut_name
-            if not junction_path.exists():
-                # mklink /J needs: mklink /J <link> <target>
-                # Target MUST be absolute for junctions to work correctly
-                result = subprocess.run(
-                    ['cmd', '/c', 'mklink', '/J', str(junction_path), str(target_path.resolve())],
-                    capture_output=True,
-                    text=True,
-                    shell=False
-                )
-                if result.returncode == 0:
-                    logger.info("Created junction to %s at %s", target_path.name, junction_path)
-                    return True
-                else:
-                    # Junction failed (maybe permissions?) - create a text file as fallback
-                    # At least the user knows where to find the real files
-                    redirect_file = shortcut_dir / f"{shortcut_name}.redirect.txt"
-                    redirect_file.write_text(
-                        f"This album already exists elsewhere.\n"
-                        f"Relative path: {rel_path}\n"
-                        f"Absolute path: {target_path.resolve()}\n",
-                        encoding="utf-8"
-                    )
-                    logger.info("Created redirect file to %s at %s", target_path.name, redirect_file)
-                    return True
-            return False  # Already exists, nothing to do
-        else:
-            # Unix: Symlinks work great with relative paths (more portable)
-            symlink_path = shortcut_dir / shortcut_name
-            if not symlink_path.exists():
-                symlink_path.symlink_to(rel_path)
-                logger.info("Created symlink to %s at %s", target_path.name, symlink_path)
-                return True
-            return False  # Already exists
+        # Create a redirect file with relative path
+        redirect_file = shortcut_dir / f"{shortcut_name}.redirect.txt"
+        if not redirect_file.exists():
+            redirect_file.write_text(
+                f"This album already exists elsewhere.\n"
+                f"Relative path: {rel_path}\n",
+                encoding="utf-8"
+            )
+            logger.info("Created redirect file to %s at %s", target_path.name, redirect_file)
+            return True
+        return False  # Already exists
     except Exception as exc:
         logger.warning("Failed to create shortcut to %s: %s", target_path, exc)
         return False
@@ -210,6 +181,34 @@ def create_relative_shortcut(target_path: Path, shortcut_dir: Path, shortcut_nam
 # =============================================================================
 # FOLDER PATH DETERMINATION
 # =============================================================================
+
+def _build_versioned_item_name(item: AudioItem) -> str:
+    """
+    Build the folder name for an item, including version info if needed.
+    
+    Books with multiple versions (different readers) get distinct folder names:
+    - "Nana" (original version, no suffix)
+    - "Nana (Version 2 - René Depasse)" (version 2 with different reader)
+    
+    The version is detected from:
+    1. URL containing "-version-N"
+    2. Different readers for same title (handled at folder level)
+    """
+    from ..infra.parser import extract_version_from_url
+    
+    base_title = item.title or slug_from_url(item.source_url) or "work"
+    base_name = sanitize_filename(base_title)
+    
+    # Check for version number in URL
+    version_num = extract_version_from_url(item.source_url)
+    
+    if version_num:
+        # URL indicates this is a versioned book
+        reader_suffix = f" - {item.reader}" if item.reader else ""
+        return f"{base_name} (Version {version_num}{reader_suffix})"
+    
+    return base_name
+
 
 def _determine_folder_paths(
     item: AudioItem,
@@ -301,6 +300,32 @@ def _determine_folder_paths(
 # =============================================================================
 # DOWNLOAD HELPERS
 # =============================================================================
+
+def _files_exist_on_disk(
+    item_dir: Path,
+    item: AudioItem,
+    args: argparse.Namespace,
+    logger: logging.Logger,
+) -> bool:
+    """
+    Check if audio files for this item already exist on disk.
+    
+    Used by --no-duplicates to skip re-downloading existing files.
+    Returns True if the folder exists and contains MP3 or ZIP files.
+    """
+    if not item_dir.exists():
+        return False
+    
+    # Check for audio files
+    audio_extensions = {'.mp3', '.zip', '.m4a', '.ogg'}
+    audio_files = [f for f in item_dir.iterdir() if f.is_file() and f.suffix.lower() in audio_extensions]
+    
+    if audio_files:
+        logger.debug("Found %d existing audio files in %s", len(audio_files), item_dir)
+        return True
+    
+    return False
+
 
 def _handle_duplicate_shortcut(
     item: AudioItem,
@@ -473,7 +498,8 @@ def download_item(
     Returns the list of downloaded file paths.
     """
     session = create_session()
-    item_name = sanitize_filename(item.title or slug_from_url(item.source_url) or "work")
+    # Use versioned name if URL indicates a version (e.g., "-version-2")
+    item_name = _build_versioned_item_name(item)
     
     # Step 1: Determine folder structure
     paths = _determine_folder_paths(item, item_name, output_dir)
@@ -482,8 +508,14 @@ def download_item(
     item_dir = paths.item_dir
 
     # Step 2: Check for duplicates (--no-duplicates mode)
-    if getattr(args, 'no_duplicates', False) and folder_registry and not skip_download:
-        if _handle_duplicate_shortcut(item, item_dir, folder_registry, summary, project_tracker, logger):
+    # This checks if files already exist on disk before downloading
+    if getattr(args, 'no_duplicates', False) and not skip_download:
+        if _files_exist_on_disk(item_dir, item, args, logger):
+            logger.info("Skipping %s - files already exist at %s", item.title or item.source_url, item_dir)
+            if summary:
+                summary.add_item(item, item_dir, downloaded_files=[])
+            if project_tracker and collection_root:
+                project_tracker.mark_done(collection_root, item.title or item_dir.name, logger)
             return []
 
     # Step 3: Handle dry-run mode

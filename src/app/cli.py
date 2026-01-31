@@ -53,7 +53,12 @@ def parse_args(argv: Iterable[str] | None = None) -> argparse.Namespace:
     parser.add_argument(
         "--no-duplicates",
         action="store_true",
-        help="Create relative shortcuts for duplicate albums instead of re-downloading",
+        help="Skip files that already exist on disk (check before download)",
+    )
+    parser.add_argument(
+        "--no-log",
+        action="store_true",
+        help="Do not create log files (litteratureaudio.log, dry-run-report.log)",
     )
     return parser.parse_args(argv)
 
@@ -72,7 +77,7 @@ def load_urls(args: argparse.Namespace) -> list[str]:
 
 def main(argv: Iterable[str] | None = None) -> int:
     args = parse_args(argv)
-    logger = setup_logging()
+    logger = setup_logging(no_log=getattr(args, 'no_log', False))
 
     if args.verify_path:
         return verify_output(Path(args.verify_path), logger)
@@ -82,7 +87,11 @@ def main(argv: Iterable[str] | None = None) -> int:
         logger.error("No URL provided")
         return 1
 
-    reporter = DryRunReporter(Path("dry-run-report.log")) if args.dry_run else None
+    # Reporter for dry-run (unless --no-log)
+    reporter = None
+    if args.dry_run and not getattr(args, 'no_log', False):
+        reporter = DryRunReporter(Path("dry-run-report.log"))
+    
     summary = None
     if args.summary_report or args.csv_report:
         mode = "dry-run" if args.dry_run else "metadata-only" if args.metadata_only else "download"

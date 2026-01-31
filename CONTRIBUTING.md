@@ -62,10 +62,12 @@ When you touch scraping or the pipeline, explicitly verify:
 - MP3-first then ZIP fallback in `--format default`.
 - Windows-safe filename cleaning (forbidden characters, `:`).
 - **Sommaire extraction thresholds** (70%/50% fallbacks for collection URLs).
+- **Multi-version books** (URLs with `-version-N` get separate folders with reader name).
 
 ### Folder naming conventions
 
 - **Single album (direct URL):** `[Author] - [Title]` at output root.
+- **Multi-version albums:** `[Author] - [Title] (Version N - Reader)` for versioned URLs.
 - **Collective project with author (direct URL):** `[Author] - [Project]` at output root.
 - **Collective project without author (e.g. Bible):** `[Project]` at output root.
 - **Nested projects:** `[Author] - [ParentProject]/[NestedProject]/[Book]` (no author prefix on nested).
@@ -78,7 +80,7 @@ Projects are processed one at a time: all metadata is scraped, then all files ar
 
 ### Duplicate detection (`--no-duplicates`)
 
-When enabled, the tool creates directory junctions (Windows) or symlinks (Unix) instead of re-downloading duplicate albums. Falls back to `.redirect.txt` files if junction creation fails.
+When enabled, the tool skips downloading if audio files already exist in the target folder. This checks for `.mp3`, `.zip`, `.m4a`, `.ogg` files on disk.
 
 ### Retry logic
 

@@ -9,17 +9,13 @@
 
 **⚠️ Notice beta :** Cette version inclut des ameliorations significatives sur l'extraction des sommaires/collections. Merci de signaler tout probleme : https://github.com/L-at-nnes/litteratureaudio.com-ripper/issues
 
-**Limitations connues :**
-- Les livres avec plusieurs versions (differents lecteurs) peuvent etre fusionnes dans un meme dossier
-- Certains cas speciaux avec des noms d'auteurs inverses dans les URLs sont geres mais peuvent necessiter des ajustements
-
 Outil en ligne de commande pour scraper et telecharger les livres audio depuis
 litteratureaudio.com, avec une arborescence propre (compatible Windows) et des
 exports de metadonnees utiles.
 
 Il est concu pour etre robuste face aux particularites du site: projets
 collectifs, pagination, pistes chargees 10 par 10 ("voir plus"), variantes
-MP3/ZIP et nommages incoherents.
+MP3/ZIP, versions multiples (differents lecteurs) et nommages incoherents.
 
 ## Depot
 
@@ -77,7 +73,8 @@ Le tableau ci-dessous couvre toutes les options exposees par la CLI.
 | `--summary-report` | chemin JSON | | Écrit un résumé (nom par défaut: `summary-report.json`) | `python main.py --summary-report --txt audiobooks.txt` |
 | `--csv-report` | chemin CSV | | Écrit un CSV d'indexation (nom par défaut: `report.csv`) | `python main.py --csv-report --txt audiobooks.txt` |
 | `--verify` | chemin dossier | | Re-scan un dossier et signale les manques | `python main.py --verify dl` |
-| `--no-duplicates` | flag | `false` | Crée des raccourcis au lieu de re-télécharger les doublons | `python main.py --no-duplicates --txt audiobooks.txt` |
+| `--no-duplicates` | flag | `false` | Ignore les fichiers déjà présents sur le disque | `python main.py --no-duplicates --txt audiobooks.txt` |
+| `--no-log` | flag | `false` | Ne pas créer de fichiers log | `python main.py --no-log --txt audiobooks.txt` |
 
 ### Exemples de commandes utiles
 

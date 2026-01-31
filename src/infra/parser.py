@@ -141,11 +141,52 @@ def extract_author(soup: BeautifulSoup) -> Optional[str]:
 
 
 def extract_reader(soup: BeautifulSoup) -> Optional[str]:
+    """Extract the reader (narrator) name from a book page.
+    
+    The site uses several different HTML structures:
+    - Old: span.entry-voix a[rel="tag"]
+    - New: span.entry-info-voices
+    - Alt: span.block-loop-heading containing "Lu par"
+    """
+    # Method 1: Old structure - span.entry-voix
     reader_span = soup.find("span", class_="entry-voix")
     if reader_span:
         link = reader_span.find("a", rel="tag")
         if link:
             return normalize_text(link.get_text(strip=True))
+    
+    # Method 2: New structure - span.entry-info-voices
+    voices_span = soup.find("span", class_="entry-info-voices")
+    if voices_span:
+        return normalize_text(voices_span.get_text(strip=True))
+    
+    # Method 3: "Lu par X" in block-loop-heading
+    for heading in soup.find_all("span", class_="block-loop-heading"):
+        text = heading.get_text(strip=True)
+        if text.startswith("Lu par "):
+            return normalize_text(text[7:])  # Remove "Lu par " prefix
+    
+    # Method 4: Look for links to donneur/donneuse pages
+    for a in soup.find_all("a", href=True):
+        href = a.get("href", "")
+        if "/donneur-de-voix/" in href or "/donneuse-de-voix/" in href:
+            reader = a.get_text(strip=True)
+            if reader and reader not in ("Par donneur de voix", "Par voix"):
+                return normalize_text(reader)
+    
+    return None
+
+
+def extract_version_from_url(url: str) -> Optional[int]:
+    """Extract version number from URL if present.
+    
+    URLs like 'zola-emile-nana-version-2.html' return 2.
+    URLs without version return None.
+    """
+    import re
+    match = re.search(r'-version-(\d+)(?:\.html)?$', url)
+    if match:
+        return int(match.group(1))
     return None
 
 
