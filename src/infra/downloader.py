@@ -7,7 +7,7 @@ from typing import Optional
 from urllib.parse import urlparse
 
 import requests
-from mutagen.id3 import APIC, ID3, TALB, TIT2, TPE1
+from mutagen.id3 import APIC, ID3, TALB, TCOM, TIT2, TPE1
 from mutagen.mp3 import MP3
 
 from .http import RateLimiter, head_request
@@ -208,7 +208,8 @@ def tag_mp3(mp3_path: Path, item: AudioItem, cover_path: Optional[Path], track_t
     
     Tags written:
     - TIT2 (Title): track title if available, else the audiobook title
-    - TPE1 (Artist): reader name, fallback to author, fallback to "Unknown"
+    - TPE1 (Artist): reader (narrator) name, fallback to author, fallback to "Unknown"
+    - TCOM (Composer): book author (the writer of the original work)
     - TALB (Album): the audiobook title
     - APIC (Cover): embedded album art if we have a cover image
     
@@ -226,8 +227,13 @@ def tag_mp3(mp3_path: Path, item: AudioItem, cover_path: Optional[Path], track_t
         if title:
             audio.tags.add(TIT2(encoding=3, text=title))
 
+        # TPE1 (Artist) = reader/narrator
         artist = item.reader or item.author or "Unknown"
         audio.tags.add(TPE1(encoding=3, text=artist))
+
+        # TCOM (Composer) = book author (the writer)
+        if item.author:
+            audio.tags.add(TCOM(encoding=3, text=item.author))
 
         album = item.title or title
         if album:

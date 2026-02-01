@@ -184,15 +184,15 @@ def create_relative_shortcut(target_path: Path, shortcut_dir: Path, shortcut_nam
 
 def _build_versioned_item_name(item: AudioItem) -> str:
     """
-    Build the folder name for an item, including version info if needed.
+    Build the folder name for an item, including reader name if it's a version.
     
     Books with multiple versions (different readers) get distinct folder names:
-    - "Nana" (original version, no suffix)
-    - "Nana (Version 2 - René Depasse)" (version 2 with different reader)
+    - "Nana (René Depasse)" (reader name in parentheses)
+    - "Nana (Pomme)" (another reader)
     
-    The version is detected from:
-    1. URL containing "-version-N"
-    2. Different readers for same title (handled at folder level)
+    All versions are placed at the same level (no hierarchy).
+    
+    The version is detected from URL containing "-version-N".
     """
     from ..infra.parser import extract_version_from_url
     
@@ -202,10 +202,9 @@ def _build_versioned_item_name(item: AudioItem) -> str:
     # Check for version number in URL
     version_num = extract_version_from_url(item.source_url)
     
-    if version_num:
-        # URL indicates this is a versioned book
-        reader_suffix = f" - {item.reader}" if item.reader else ""
-        return f"{base_name} (Version {version_num}{reader_suffix})"
+    if version_num and item.reader:
+        # URL indicates this is a versioned book - use reader name only
+        return f"{base_name} ({item.reader})"
     
     return base_name
 

@@ -183,6 +183,23 @@ dl/
     ...mp3
 ```
 
+## Multi-version books
+
+Some books exist in multiple versions (different readers).
+
+- Versions are placed at the same level (no hierarchy).
+- Folder names include the reader name: `[Title] (Reader)`.
+- Example: `Nana (Pomme)` and `Nana (René Depasse)`.
+
+## ID3 Tags
+
+MP3 files are tagged with:
+- **TIT2 (Title):** track title or audiobook title
+- **TPE1 (Artist):** reader/narrator name
+- **TCOM (Composer):** book author (the writer of the original work)
+- **TALB (Album):** audiobook title
+- **APIC (Cover):** embedded album art
+
 ## What the scraper explicitly handles
 
 - Listing pagination (author / reader / member pages).
@@ -191,6 +208,7 @@ dl/
 - Sequential project processing: each project is fully scraped and downloaded before moving to the next.
 - Automatic retry on download failures (up to 3 attempts with logged retries).
 - Duplicate detection with `--no-duplicates`: creates shortcuts instead of re-downloading.
+- Multi-version book handling (same title with different readers).
 
 If a page has more than 10 tracks, the tool calls the internal endpoint that loads the next track batches, so the full track list is captured.
 

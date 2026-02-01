@@ -62,12 +62,13 @@ When you touch scraping or the pipeline, explicitly verify:
 - MP3-first then ZIP fallback in `--format default`.
 - Windows-safe filename cleaning (forbidden characters, `:`).
 - **Sommaire extraction thresholds** (70%/50% fallbacks for collection URLs).
-- **Multi-version books** (URLs with `-version-N` get separate folders with reader name).
+- **Multi-version books** (URLs with `-version-N` get folder names with reader only: `Title (Reader)`).
+- **ID3 tagging** (TPE1=reader, TCOM=author, TALB=album title).
 
 ### Folder naming conventions
 
 - **Single album (direct URL):** `[Author] - [Title]` at output root.
-- **Multi-version albums:** `[Author] - [Title] (Version N - Reader)` for versioned URLs.
+- **Multi-version albums:** `[Title] (Reader)` for versioned URLs (all versions at same level).
 - **Collective project with author (direct URL):** `[Author] - [Project]` at output root.
 - **Collective project without author (e.g. Bible):** `[Project]` at output root.
 - **Nested projects:** `[Author] - [ParentProject]/[NestedProject]/[Book]` (no author prefix on nested).

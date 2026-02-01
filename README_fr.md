@@ -88,6 +88,31 @@ Le tableau ci-dessous couvre toutes les options exposees par la CLI.
 | Dry-run + rapports | `python main.py --dry-run --summary-report summary.json --csv-report library.csv --txt audiobooks.txt` |
 | Verification d'une sortie | `python main.py --verify dl` |
 
+### Encodage console Windows (UTF-8)
+
+Les textes francais (caracteres accentues comme e, e, a, e, oe) peuvent s'afficher incorrectement dans PowerShell ou CMD sous Windows. Le fichier log (`litteratureaudio.log`) est toujours correctement encode en UTF-8.
+
+Pour corriger l'affichage dans **PowerShell**, executez ceci avant le script :
+
+```powershell
+[Console]::OutputEncoding = [System.Text.Encoding]::UTF8
+python main.py ...
+```
+
+Ou en une seule ligne :
+
+```powershell
+[Console]::OutputEncoding = [System.Text.Encoding]::UTF8; python main.py --txt audiobooks.txt
+```
+
+Pour rendre permanent dans PowerShell, ajoutez a votre `$PROFILE` :
+
+```powershell
+[Console]::OutputEncoding = [System.Text.Encoding]::UTF8
+```
+
+Dans **CMD**, executez `chcp 65001` d'abord (peut necessiter une police Unicode).
+
 ## Regles d'arborescence (comportement attendu)
 
 Le comportement depend du type d'URL de depart.
@@ -129,6 +154,23 @@ Certains projets collectifs regroupent des oeuvres de plusieurs auteurs (ex: "De
 - L'auteur est enregistre comme "Auteurs divers" dans les metadonnees.
 - Chaque livre garde son auteur d'origine dans les metadonnees JSON.
 
+### 7) Livres multi-versions
+
+Certains livres existent en plusieurs versions (differents lecteurs).
+
+- Les versions sont placees au meme niveau (pas de hierarchie).
+- Le nom du dossier inclut le nom du lecteur : `[Titre] (Lecteur)`.
+- Exemple : `Nana (Pomme)` et `Nana (Rene Depasse)`.
+
+## Tags ID3
+
+Les fichiers MP3 sont tagges avec :
+- **TIT2 (Titre):** titre de la piste ou du livre audio
+- **TPE1 (Artiste):** nom du lecteur/narrateur
+- **TCOM (Compositeur):** auteur du livre (l'ecrivain de l'oeuvre originale)
+- **TALB (Album):** titre du livre audio
+- **APIC (Couverture):** pochette integree
+
 ## Exemple d'arborescence
 
 ```text
@@ -167,6 +209,7 @@ dl/
 - Traitement sequentiel des projets : chaque projet est entierement scrape et telecharge avant de passer au suivant.
 - Retry automatique en cas d'echec de telechargement (jusqu'a 3 tentatives avec logs).
 - Detection des doublons avec `--no-duplicates` : cree des raccourcis au lieu de re-telecharger.
+- Gestion des livres multi-versions (meme titre avec differents lecteurs).
 
 Si une page contient plus de 10 pistes, l'outil appelle l'endpoint interne qui charge la suite, afin d'obtenir la liste complete des pistes.
 
